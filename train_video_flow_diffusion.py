@@ -59,18 +59,13 @@ else:
     use_deconv = True
 use_residual_flow = "-rf" in postfix
 learn_null_cond = "-lnc" in postfix
-#INPUT_SIZE = 128
-INPUT_SIZE = 64   #48
-#N_FRAMES = 40
+INPUT_SIZE = 64  
 N_FRAMES = 10
-LEARNING_RATE = 1e-5  #1e-4
+LEARNING_RATE = 1e-5 
 RANDOM_SEED = 1234
 MEAN = (0.0, 0.0, 0.0)
 
-#RESTORE_FROM = ""
-#AE_RESTORE_FROM = "/data/hfn5052/text2motion/RegionMM/log-natops/natops128-crop/snapshots-crop/RegionMM_0100_S024000.pth"
 AE_RESTORE_FROM = "LFAE_NATOPS.pth"
-#config_pth = "/workspace/code/CVPR23_LFDM/config/natops128.yaml"
 config_pth = "config/natops128.yaml"
 SNAPSHOT_DIR = os.path.join(root_dir, 'snapshots'+postfix)
 IMGSHOT_DIR = os.path.join(root_dir, 'imgshots'+postfix)
@@ -282,7 +277,6 @@ def setup_data_loader(data_dir, mask_dir, input_size, n_frames, batch_size, num_
 
 def init_distributed():
     dist.init_process_group(backend='nccl')  # Use NCCL for GPU communication
-    #local_rank = torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
     local_rank = int(os.environ.get('LOCAL_RANK', '0'))
     torch.cuda.set_device(local_rank)
     return local_rank
@@ -392,17 +386,6 @@ def main():
         print("NO checkpoint found!")
 
     setup_seed(args.random_seed)
-    # trainloader = data.DataLoader(NATOPS(data_dir=data_dir,
-    #                                    mask_dir=mask_dir,
-    #                                    image_size=INPUT_SIZE,
-    #                                    num_frames=N_FRAMES,
-    #                                    color_jitter=True,
-    #                                    sampling=frame_sampling,
-    #                                    mean=MEAN),
-    #                             batch_size=args.batch_size,
-    #                             shuffle=True, num_workers=args.num_workers,
-    #                             prefetch_factor=2, persistent_workers=True,
-    #                             pin_memory=True)
 
     trainloader, train_sampler = setup_data_loader(
                                     data_dir=data_dir,
@@ -567,22 +550,6 @@ def main():
                                        sample_text=[ref_texts[0]])
                 model.module.sample_one_video(cond_scale=1.0)
 
-                # ###Save the sampled video frames
-                # for i, name in enumerate(real_names):
-                #     # Save original video frames
-                #     save_sampled_images(
-                #         real_vids[i], 
-                #         f"{name}_original", 
-                #         base_dir='sampled_images'
-                #     )
-                    
-                #     # Save generated video frames
-                #     save_sampled_images(
-                #         model.module.sample_out_vid[i], 
-                #         f"{name}_generated", 
-                #         base_dir='sampled_images'
-                #     )
-
                 num_frames = real_vids.size(2)
                 msk_size = ref_imgs.shape[-1]
                 new_im_arr_list = []
@@ -649,11 +616,6 @@ def main():
                 #cnt += 1
             cnt += 1
             dist.barrier()
-            
-            # if actual_step % args.evaluation_step == 0:
-            #     print("Evaluating model...")
-            #     metrics = evaluate_and_log(model, testloader, actual_step, args)
-            
             scheduler.step()
             epoch_cnt += 1
             print("epoch %d, lr= %.7f" % (epoch_cnt, model.module.optimizer_diff.param_groups[0]["lr"]))

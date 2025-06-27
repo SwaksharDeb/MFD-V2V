@@ -349,28 +349,14 @@ class Attention(nn.Module):
             k = self.rotary_emb.rotate_queries_or_keys(k)
 
         # similarity
-
         sim = einsum('... h i d, ... h j d -> ... h i j', q, k)
 
         # relative positional bias
 
         if exists(pos_bias):
             sim = sim + pos_bias
-
-        # if exists(focus_present_mask) and not (~focus_present_mask).all():
-        #     attend_all_mask = torch.ones((n, n), device=device, dtype=torch.bool)
-        #     attend_self_mask = torch.eye(n, device=device, dtype=torch.bool)
-
-        #     mask = torch.where(
-        #         rearrange(focus_present_mask, 'b -> b 1 1 1 1'),
-        #         rearrange(attend_self_mask, 'i j -> 1 1 1 i j'),
-        #         rearrange(attend_all_mask, 'i j -> 1 1 1 i j'),
-        #     )
-
-        #     sim = sim.masked_fill(~mask, -torch.finfo(sim.dtype).max)
-
+            
         # numerical stability
-
         sim = sim - sim.amax(dim=-1, keepdim=True).detach()
         attn = sim.softmax(dim=-1)
 
@@ -405,8 +391,6 @@ class STCEncoder(nn.Module):
         rotary_emb = RotaryEmbedding(32)
         temporal_attn = lambda dim: EinopsToAndFrom('b c f h w', 'b (h w) f c',
                                                      Attention(dim, heads=4, dim_head=32, rotary_emb=rotary_emb))
-        # self.spatial_attention = PreNorm(embed_dim,SpatialLinearAttention(dim=embed_dim, heads=4, dim_head=32))
-        # self.temporal_attention = PreNorm(embed_dim, temporal_attn(dim=embed_dim))
         self.spatial_attention = SpatialLinearAttention(dim=embed_dim, heads=4, dim_head=32)
         self.temporal_attention = temporal_attn(dim=embed_dim)
         
@@ -419,17 +403,9 @@ class STCEncoder(nn.Module):
 
         # Apply Spatial Convolution (Preserve H, W) across frames
         x = self.spatial_conv(x)  # Output: (B, Embed_dim, F, H, W)
-
-        # # Reshape for Temporal Attention
-        # x = x.permute(0, 3, 4, 2, 1)  # (B, H, W, Frames, Embed_dim)
-        # x = x.reshape(B * H * W, F, self.embed_dim)  # (B * H * W, Frames, Embed_dim)
-
         x = self.spatial_attention([x, x])
         x = self.temporal_attention([x, x])  # (B * H * W, Frames, Embed_dim)
-
-        # Restore Spatial Structure
-        # x = x.view(B, H, W, F, self.embed_dim).permute(0, 4, 3, 1, 2)  # (B, Embed_dim, Frames, H, W)
-
+        
         return x  # Preserves spatial structure and uses temporal attention
 
 # model
@@ -545,21 +521,6 @@ class Unet3D(nn.Module):
 
         for ind, (dim_in, dim_out) in enumerate(in_out):
             is_last = ind >= (num_resolutions - 1)
-
-            # self.downs.append(nn.ModuleList([
-            #     block_klass_cond(dim_in, dim_out),
-            #     block_klass_cond(dim_out, dim_out),
-            #     block_klass_cond(dim_in, dim_out),
-            #     block_klass_cond(dim_out, dim_out),
-            #     block_klass_cond(dim_in, dim_out),
-            #     block_klass_cond(dim_out, dim_out),
-            #     Residual(PreNorm(dim_out, SpatialLinearAttention(dim_out,
-            #                                                      heads=attn_heads))) if use_sparse_linear_attn else nn.Identity(),
-            #     Residual(PreNorm(dim_out, temporal_attn(dim_out))),
-            #     Downsample(dim_out) if not is_last else nn.Identity()
-            # ]))        # Conv1x1(2, dim_out),  # Add 1x1 conv for encoder path,   dim_in
-            #                       #Conv1x1(dim_out, dim_out),
-
             self.downs.append(nn.ModuleList([
                 block_klass_cond(dim_in, dim_out),
                 block_klass_cond(dim_out, dim_out),
@@ -589,23 +550,6 @@ class Unet3D(nn.Module):
 
         for ind, (dim_in, dim_out) in enumerate(reversed(in_out)):
             is_last = ind >= (num_resolutions - 1)
-
-            # self.ups.append(nn.ModuleList([
-            #     block_klass_cond(dim_out * 2, dim_in),
-            #     block_klass_cond(dim_in, dim_in),
-            #     Conv1x1(dim_out, dim_in),
-            #     Conv1x1(dim_in, dim_in),
-            #     Conv1x1(dim_out, dim_in),
-            #     Conv1x1(dim_in, dim_in),
-            #     Residual(PreNorm(dim_in, SpatialLinearAttention(dim_in,
-            #                                                     heads=attn_heads))) if use_sparse_linear_attn else nn.Identity(),
-            #     Residual(PreNorm(dim_in, SpatialLinearAttention(dim_in,
-            #                                                     heads=attn_heads))) if use_sparse_linear_attn else nn.Identity(),
-            #     Residual(PreNorm(dim_in, temporal_attn(dim_in))),
-            #     Upsample(dim_in, use_deconv, padding_mode) if not is_last else nn.Identity()
-            # ]))   #Conv1x1(dim_out*2, dim_in),  # Add 1x1 conv for encoder path
-            #     ## Conv1x1(dim_in, dim_in),
-
             self.ups.append(nn.ModuleList([
                 block_klass_cond(dim_out * 2, dim_in),
                 block_klass_cond(dim_in, dim_in),
@@ -619,11 +563,9 @@ class Unet3D(nn.Module):
                                                                 heads=attn_heads))) if use_sparse_linear_attn else nn.Identity(),
                 Residual(PreNorm(dim_in, temporal_attn(dim_in))),
                 Upsample(dim_in, use_deconv, padding_mode) if not is_last else nn.Identity()
-            ]))   #Conv1x1(dim_out*2, dim_in),  # Add 1x1 conv for encoder path
-                ## Conv1x1(dim_in, dim_in),
+            ])) 
 
 
-        # out_dim = default(out_grid_dim, channels)
         self.final_conv = nn.Sequential(
             block_klass(dim * 2, dim),
             nn.Conv3d(dim, out_grid_dim, 1)
@@ -684,27 +626,8 @@ class Unet3D(nn.Module):
         x_prev = x
         r = x.clone()
 
-        #mask_ = mask.repeat(1, 2, 1, 1, 1)  # Repeat the second dimension (channel) twice
-        #modality_enc_scm = self.stc_encoder(mask_)  # (B, Frames, Embed_dim)
-        #modality_enc_scm = self.modality_enc(mask)
-        #modality_enc_scm = self.init_spatial_attention([modality_enc_scm, modality_enc_scm], modality_enc_scm)
         scm = self.norma_layer(scm)
-        modality_enc = self.stc_encoder(scm)  # (B, Frames, Embed_dim)
-        #modality_enc = self.stc_encoder_2(modality_enc)
-        #modality_enc = modality_enc.unsqueeze(1).expand(-1, C, -1, -1)  # Match input shape
-        #modality_enc = 0.5*modality_enc_scm + 0.5*modality_enc  # Inject STC features
-
-        #modality_enc = self.modality_enc(scm)
-        # #raf = torchvision.transforms.functional.gaussian_blur(scm.view(scm.shape[0]*scm.shape[2], scm.shape[1], scm.shape[3], scm.shape[4]), kernel_size=[13, 13], sigma=[8, 8])
-        # #scm = raf.view(scm.shape[0], scm.shape[1], scm.shape[2], scm.shape[3], scm.shape[4])
-        # #scm = ((scm - scm.min()) * 2 / (scm.max() - scm.min())) - 1
-        # scm = self.norma_layer(scm)
-        #modality_enc = self.modality_enc_mask(scm)  #scm
-        # modality_enc = self.modality_enc_mask(scm)  #scm
-
-        #x = self.init_temporal_attn([x,modality_enc], x, pos_bias=time_rel_pos_bias)
-        
-        
+        modality_enc = self.stc_encoder(scm)  # (B, Frames, Embed_dim)        
         t = self.time_mlp(time) if exists(self.time_mlp) else None
 
         # classifier free guidance
@@ -724,94 +647,33 @@ class Unet3D(nn.Module):
         for block1, block2, block3, block4, block5, block6, spatial_attn, temporal_attn, downsample in self.downs:
             x = block1(x, t)
             x = block2(x, t)
-            #x_prev = x
-            # modality_enc = block3(modality_enc, t)
-            # modality_enc = block4(modality_enc, t)
-
+    
             modality_enc = block3(modality_enc)
             modality_enc = block4(modality_enc)
-                         
-            #modality_enc_scm = conv1(scm)
-            #modality_enc_scm = conv2(scm)
-            #modality_enc_scm = block5(modality_enc_scm, t)
-            #modality_enc_scm = block6(modality_enc_scm, t)
-            #x = spatial_attn([x,modality_enc], x)
+            
             x = spatial_attn([x,x], x)
-            #x = temporal_attn([x,modality_enc], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-
-            #x = spatial_attn([x,x], x)
-            #x = temporal_attn([x,x], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-
-            #scm_ecn = F.interpolate(modality_enc_scm, size=(x.shape[-3], x.shape[-2], x.shape[-1]), mode='trilinear', align_corners=False)
-
-            #x = spatial_attn([x,modality_enc], x)
-            #x = spatial_attn([x,modality_enc], x)
-            #x = temporal_attn([x, modality_enc], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
             x = temporal_attn([x, x], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-            #x_scm = temporal_attn_scm([x, modality_enc_scm], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-            #x_scm = spatial_attn_scm([x_scm,modality_enc_scm], x_scm)
-            #x = x + x_scm
             
             h.append(x)
             enc.append(modality_enc)
-            #enc_scm.append(modality_enc_scm)
             x = downsample(x)
             modality_enc = downsample(modality_enc)
-            #modality_enc_scm = downsample(modality_enc_scm)
-
+            
         x = self.mid_block1(x, t)
-        #x = self.mid_spatial_attn([x,modality_enc], x)
-        #x = self.mid_spatial_attn([x,x], x)
         x = self.mid_spatial_attn_scm([x,modality_enc], x)
-        #x = x + x_s
         x = self.mid_temporal_attn([x,modality_enc], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-        #x = self.mid_temporal_attn_scm([x,modality_enc_scm], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-
-        #x = self.mid_spatial_attn([x,x], x)
-        #x = self.mid_temporal_attn([x,x], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-        #x = self.mid_spatial_attn_mask([x,modality_enc], x)
-        #x = self.mid_temporal_attn_mask([x,modality_enc], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-        #x_scm = self.mid_temporal_attn_scm([x,modality_enc_scm], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-        #x_scm = self.mid_spatial_attn_scm([x_scm,modality_enc_scm], x_scm)
-        #x = x + x_scm
         x = self.mid_block2(x, t)
 
         for block1, block2, block3, block4, conv1, conv2, spatial_attn, spatial_attn_scm, temporal_attn, upsample in self.ups:
             x = torch.cat((x, h.pop()), dim=1)
             x = block1(x, t)
             x = block2(x, t)
-            #modality_enc = torch.cat((modality_enc, enc.pop()), dim=1)
-            #modality_enc_scm = torch.cat((modality_enc_scm, enc_scm.pop()), dim=1)
-            modality_enc = enc.pop()
-            #modality_enc_scm = enc_scm.pop()
-            # modality_enc = block3(modality_enc, t)
-            # modality_enc = block4(modality_enc, t)
             modality_enc = block3(modality_enc)
             modality_enc = block4(modality_enc)
-            #modality_enc_scm = conv1(modality_enc_scm)
-            #modality_enc_scm = conv2(modality_enc_scm)
-            #modality_enc_scm = block5(modality_enc_scm, t)
-            #modality_enc_scm = block6(modality_enc_scm, t)
-            #x = spatial_attn([x,modality_enc], x)
-            #x = spatial_attn([x,x], x)
             x = spatial_attn_scm([x,modality_enc], x)
-            #x = x + x_s
             x = temporal_attn([x,modality_enc], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-
-            #x = spatial_attn([x,x], x)
-            #x = temporal_attn([x,x], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-
-            #scm_ecn = F.interpolate(modality_enc_scm, size=(x.shape[-3], x.shape[-2], x.shape[-1]), mode='trilinear', align_corners=False)
-            #x = spatial_attn_scm([x,modality_enc], x)
-            #x = temporal_attn_mask([x,modality_enc], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-            #x_scm = temporal_attn_scm([x,modality_enc_scm], x, pos_bias=time_rel_pos_bias, focus_present_mask=focus_present_mask)
-            #x_scm = spatial_attn_scm([x_scm,modality_enc_scm], x_scm)
-            #x = x + x_scm
-            
             x = upsample(x)
-            #modality_enc = upsample(modality_enc)
-            #modality_enc_scm = upsample(modality_enc_scm)
-
+            
         x = torch.cat((x, r), dim=1)
         return self.final_conv(x)
 
@@ -989,7 +851,6 @@ class GaussianDiffusion(nn.Module):
                                 cond_scale=cond_scale)
 
         return img
-        # return unnormalize_img(img)
 
     @torch.inference_mode()
     def sample(self, fea, scm, mask, dense, cond=None, cond_scale=1., batch_size=16):
@@ -1059,8 +920,7 @@ class GaussianDiffusion(nn.Module):
             img = x_start * alpha_next.sqrt() + \
                   c * pred_noise + \
                   sigma * noise
-
-        # img = unnormalize_to_zero_to_one(img)
+            
         return img
 
     @torch.inference_mode()
@@ -1125,8 +985,6 @@ class GaussianDiffusion(nn.Module):
 
             # clip by threshold, depending on whether static or dynamic
             self.pred_x0 = pred_x0.clamp(-s, s) / s
-        
-        #self.pred_x0 = pred_x0
 
         return loss, self.pred_x0
 
@@ -1135,7 +993,6 @@ class GaussianDiffusion(nn.Module):
         # check_shape(x, 'b c f h w', c=self.channels, f=self.num_frames, h=img_size, w=img_size)
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
         fea = fea.unsqueeze(dim=2).repeat(1, 1, x.size(2), 1, 1)
-        # x = normalize_img(x)
         return self.p_losses(x, t, fea, scm, mask, cond=text, *args, **kwargs)
 
 
@@ -1185,11 +1042,6 @@ def identity(t, *args, **kwargs):
 
 def normalize_img(t):
     return t * 2 - 1
-
-
-# def unnormalize_img(t):
-#     return (t + 1) * 0.5
-
 
 def cast_num_frames(t, *, frames):
     f = t.shape[1]

@@ -17,10 +17,6 @@ from tensorboardX import SummaryWriter
 import argparse
 from torch.cuda.amp import autocast, GradScaler
 from TLRN.core_model_resnet import Net2DResNet   #skip-connect
-# import voxelmorph with pytorch backend
-# os.environ['NEURITE_BACKEND'] = 'pytorch'
-# os.environ['VXM_BACKEND'] = 'pytorch'
-# import voxelmorph as vxm 
 import torchvision
 import numpy as np
 
@@ -47,9 +43,6 @@ class FlowDiffusion(nn.Module):
             config = yaml.safe_load(f)
 
         model_path = 'models/model.pth'
-        #self.registration_model = vxm.networks.VxmDense.load(model_path, 'cuda')
-        #self.registration_model.to('cuda')
-        #self.registration_model.eval()
         parser = argparse.ArgumentParser()
         """ ~~~~~~~~~    basic setting ~~~~~~~~~~~~"""
         parser.add_argument('--mode', type=str, default='test', help='train or test')  #test
@@ -60,7 +53,7 @@ class FlowDiffusion(nn.Module):
 
         """ ~~~~~~~~~    about training phase ~~~~~~~~~~~~"""
         parser.add_argument('--loss_type', type=str, default='MSE', help='experiment_name')
-        parser.add_argument('--max_epochs', type=int, default=100, help='maximum epoch number to train')  #6000
+        parser.add_argument('--max_epochs', type=int, default=100, help='maximum epoch number to train') 
         parser.add_argument('--batch_size', type=int, default=32, help='batch_size per gpu')   #32
         parser.add_argument('--regis_lr', type=float,  default=0.0005, help='lr of unet')
         parser.add_argument('--regis_stp', type=float,  default=100, help='step of unet')
@@ -220,27 +213,11 @@ class FlowDiffusion(nn.Module):
 
     def deformation(self, cine_img, phi):
         # Denormalize
-        #original_max = scalar_field.max()
-        #original_min = scalar_field.min()
-        #scalar_field = (normalized.astype(float) / 255.0) * (original_max - original_min) + original_min
-        
         if len(cine_img.shape) > 3:
             cine_img = cine_img[:,0,...]
         grad_source = torch.gradient(cine_img, dim=(-2,-1))  # Returns tuple of (dy, dx)
         grad_source = torch.stack(grad_source, dim=1)  # batch_size x 2 x 48 x 48
-        #grad_source = grad_source[:,:,0,...]
-        #scalar_field = (scalar_field) * (1 + 1) - 1
-        #grad_source = grad_source.unsqueeze(2).repeat(1,1,scalar_field.shape[2],1,1)
-        #velocity = scalar_field*grad_source*5
-        # b, c, t, h, w = velocity.shape
-        # velocity_reshaped = velocity.permute(2, 0, 1, 3, 4).reshape(t * b, c, h, w)
-        # velocity_blurred = torchvision.transforms.functional.gaussian_blur(velocity_reshaped, kernel_size=[13, 13], sigma=[5.0, 5.0])
-        # velocity = velocity_blurred.reshape(t, b, c, h, w).permute(1, 2, 0, 3, 4)
-        #velocity = torchvision.transforms.functional.gaussian_blur(velocity, kernel_size=[13, 13], sigma=[5.0, 5.0])  #[11,11]
-        #phi = self.integrate(velocity)
-        #deformed = self.transformer(cine_img.unsqueeze(1), phi)[:,0,...]
         deformed = self.transformer(cine_img.unsqueeze(1), phi)
-        #deformed_norm = ((deformed - deformed.min()) / (deformed.max() - deformed.min()) * 255).detach().cpu().numpy().astype(np.uint8).squeeze(0)
         return deformed
 
 
@@ -263,7 +240,6 @@ class FlowDiffusion(nn.Module):
             b_ = ui_series[1].shape[0]
             zero_tensor = torch.zeros(b, 64, 64, 2).cuda()
             ui_series.insert(0, zero_tensor)
-            #self.real_out_vid = torch.stack(real_out_img_list, dim=2)
             self.real_out_vid = self.real_vid
             self.scm_mask = torch.stack(ui_series, dim=1).permute(0,4,1,2,3)
             if self.counter%100 == 0:
@@ -278,10 +254,6 @@ class FlowDiffusion(nn.Module):
                                             self.ref_img_fea,
                                             self.ref_text)
                 else:
-                    # self.loss = self.diffusion(torch.cat((self.real_vid_grid,
-                    #                                       self.real_vid_conf*2-1), dim=1),
-                    #                            self.ref_img_fea,
-                    #                            self.ref_text)
                     self.loss, self.recon_vid = self.diffusion(self.real_vid, self.ref_img, self.scm_mask, self.real_mask, self.ref_text)
                 with torch.no_grad():
                     fake_out_img_list = []
@@ -293,46 +265,9 @@ class FlowDiffusion(nn.Module):
                     else:
                         #self.fake_vid_grid = pred[:, :2, :, :, :]
                         self.fake_vid_grid = pred
-                    #self.fake_vid_conf = (pred[:, 2, :, :, :].unsqueeze(dim=1) + 1) * 0.5
-                    #self.fake_vid_conf = pred.unsqueeze(dim=1) + 1 * 0.5
-                    #for idx in range(nf):
-                        #fake_grid = self.fake_vid_grid[:, :, idx, :, :].permute(0, 2, 3, 1)
-                        #fake_conf = self.fake_vid_conf[:, :, idx, :, :]
-                        #fake_grid = self.fake_vid_grid[:, :, idx, :, :]
-                        #deformed = self.deformation(self.ref_img, fake_grid)
-                        # predict fake out image and fake warped image
-                        # generated = self.generator.forward_with_flow(source_image=self.ref_img,
-                        #                                              optical_flow=fake_grid,
-                        #                                              occlusion_map=fake_conf)
-
-                        #fake_out_img_list.append(generated["prediction"])
-                        #fake_warped_img_list.append(generated["deformed"])
-                        # grad_source = torch.gradient(self.ref_img, dim=(-2,-1))  # Returns tuple of (dy, dx)
-                        # grad_source = torch.stack(grad_source, dim=1)
-                        # fake_velocity = fake_grid*grad_source.squeeze(2)*5
-                        # #fake_velocity = torchvision.transforms.functional.gaussian_blur(velocity, kernel_size=[13, 13], sigma=[5.0, 5.0])  #[11,11]
-                        # fake_out_img_list.append(deformed)
-                        # fake_vel_list.append(fake_velocity)
-                    #self.fake_out_vid = torch.stack(fake_grid, dim=2)
                     self.fake_out_vid = self.fake_vid_grid
-                    #self.fake_vel_grid = torch.stack(fake_vel_list, dim=2)
-                    #self.fake_warped_vid = torch.stack(fake_warped_img_list, dim=2)
                     self.rec_loss = nn.L1Loss()(self.real_vid, self.fake_out_vid)
-                    #self.rec_warp_loss = nn.L1Loss()(self.real_vid, self.fake_warped_vid)
-
-                    # flow_fields_recon = []
-                    # for idx in range(nf):
-                    #     first_frame = self.recon_vid[:,:,0,...]
-                    #     current_frame = self.recon_vid[:,:,idx,...]
-                    #     deformed, flow = self.registration_model(first_frame, current_frame) 
-                    #     flow_fields_recon.append(flow)
-                    # flow = torch.stack(flow_fields_recon, dim=2)
-                    # #flow = flow.requires_grad_(True)
-                    # with torch.enable_grad():
-                    #     self.flow_loss = nn.L1Loss()(self.flow.detach(), flow)
-                    #     self.flow_loss = self.flow_loss.requires_grad_(True)
                     self.flow_loss = 0
-
                     self.counter += 1
 
     def optimize_parameters(self):
@@ -344,19 +279,6 @@ class FlowDiffusion(nn.Module):
         self.scaler.update()
 
     def sample_one_video(self, cond_scale):
-        #self.sample_img_fea = self.generator.compute_fea(self.sample_img)
-        # if cond_scale = 1.0, not using unconditional model
-        # pred = self.diffusion.sample(self.sample_img_fea, cond=self.sample_text,
-        #                              batch_size=1, cond_scale=cond_scale)
-        pred = self.diffusion.sample(self.sample_img, self.scm_mask, self.real_mask, self.dense, cond=self.sample_text,
-                                     batch_size=1, cond_scale=cond_scale)                             
-        # if self.use_residual_flow:
-        #     b, _, nf, h, w = pred[:, :2, :, :, :].size()
-        #     identity_grid = self.get_grid(b, nf, h, w, normalize=True).cuda()
-        #     self.sample_vid_grid = pred[:, :2, :, :, :] + identity_grid
-        # else:
-        #     self.sample_vid_grid = pred[:, :2, :, :, :]
-        # self.sample_vid_conf = (pred[:, 2, :, :, :].unsqueeze(dim=1) + 1) * 0.5
         self.sample_vid_grid = pred
         nf = self.sample_vid_grid.size(2)
         with torch.no_grad():
@@ -364,45 +286,22 @@ class FlowDiffusion(nn.Module):
             sample_warped_img_list = []
             for idx in range(nf):
                 sample_grid = self.sample_vid_grid[:, :, idx, :, :]
-                #sample_conf = self.sample_vid_conf[:, :, idx, :, :]
-                #sample_grid = self.fake_vid_grid[:, :, idx, :, :]
-                
-                # predict fake out image and fake warped image
-                # generated = self.generator.forward_with_flow(source_image=self.sample_img,
-                #                                              optical_flow=sample_grid,
-                #                                              occlusion_map=sample_conf)
-                #deformed = self.deformation(self.ref_img, sample_grid)
-                #sample_out_img_list.append(generated["prediction"])
-                #sample_warped_img_list.append(generated["deformed"])
-                #sample_out_img_list.append(deformed)
                 sample_out_img_list.append(sample_grid)
         self.sample_out_vid = torch.stack(sample_out_img_list, dim=2)
-        #self.sample_warped_vid = torch.stack(sample_warped_img_list, dim=2)
-
+    
     def set_train_input(self, ref_img, real_vid, real_mask, ref_text):
         self.ref_img = ref_img.cuda()
         self.real_vid = real_vid.cuda()
         self.ref_text = ref_text
         self.real_mask = real_mask.cuda()
-        #self.scm_mask = displacement.cuda()
-
+        
     def set_sample_input(self, sample_img, displacement, mask, dense, name, sample_text):
         self.sample_img = sample_img.cuda()
         self.real_mask = mask.cuda()
         self.dense = dense.cuda()
-        self.sample_text = sample_text
-        #self.flow = displacement.cuda()
-        #animation.create_grid_visualization(self.scm_mask*4, 'test_self_flow_deformation', img_size=64)
-        #self.flow = torch.where((displacement>=-10e-4) & (displacement<=10e-4), 0, displacement).cuda()
-        
+        self.sample_text = sample_text        
         self.scm_mask = (displacement/4.3).cuda()
-        #self.scm_mask = (displacement).cuda()
-        
-        #self.scm_mask = torch.where((self.scm_mask>=-10e-3) & (self.scm_mask<=10e-3), 0, self.scm_mask).cuda()
         animation.create_grid_visualization(self.scm_mask, 'test_deformation', img_size=64)
-        #self.save_mask(self.scm_mask, name)
-
-        #deformed = self.transformer(self.real_mask, displacement)
 
     def save_mask(self, scm_mask, name_str):
         """
@@ -477,9 +376,6 @@ if __name__ == "__main__":
                           config_pth="/workspace/code/CVPR23_LFDM/config/mug128.yaml",
                           pretrained_pth="")
     model.cuda()
-    # model.train()
-    # model.set_train_input(ref_img=ref_img, real_vid=real_vid, ref_text=ref_text)
-    # model.optimize_parameters()
     model.eval()
     model.set_sample_input(sample_img=ref_img, sample_text=ref_text)
     model.sample_one_video(cond_scale=1.0)

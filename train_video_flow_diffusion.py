@@ -451,7 +451,6 @@ def main():
             
             losses.update(model.module.loss, bs)
             losses_rec.update(model.module.rec_loss, bs)
-            #losses_warp.update(model.rec_warp_loss, bs)
             losses_flow.update(model.module.flow_loss, bs)
             
             if actual_step % args.print_freq == 0:

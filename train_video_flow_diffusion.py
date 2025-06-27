@@ -351,7 +351,6 @@ def main():
     ###Optionally wrap model in DataParallel if multiple GPUs are available
     if torch.cuda.device_count() > 1:
         print(f"Using {torch.cuda.device_count()} GPUs")
-        #model = torch.nn.DataParallel(model)
         model = DDP(model)
         model.module.diffusion.use_checkpoint = True  # If using DDP (your case)
 
@@ -428,7 +427,6 @@ def main():
     for param_group in model.module.optimizer_diff.param_groups:
         param_group['initial_lr'] = args.learning_rate
 
-    #scheduler = MultiStepLR(model.optimizer_diff, epoch_milestones, gamma=0.1, last_epoch=start_epoch - 1)
     scheduler = MultiStepLR(model.module.optimizer_diff, epoch_milestones, gamma=1, last_epoch=start_epoch - 1)
     print("epoch %d, lr= %.7f" % (epoch_cnt, model.module.optimizer_diff.param_groups[0]["lr"]))
     
@@ -608,8 +606,6 @@ def main():
                     print(f"MSE: {metrics['mse']:.4f}\n")
                     print(f"LPIPS: {metrics['lpips']:.4f}")
                     print(f"FloLPIPS: {metrics['flolpips']:.4f}\n")
-            
-
                 if actual_step >= args.final_step:
                     break
 

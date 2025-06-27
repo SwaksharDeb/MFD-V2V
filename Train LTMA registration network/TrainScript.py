@@ -68,7 +68,6 @@ def save_model_state_dict(model):
 
 
 def trainer(args, model, snapshot_path):
-    # model = Net2DResNet(args).cuda()
     logging.basicConfig(filename=snapshot_path + "/log.txt", level=logging.INFO,
                         format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -154,9 +153,6 @@ def trainer(args, model, snapshot_path):
                 else:
                     masks_series = None
                 
-                # output_dir = "output_gifs"
-                # save_tensor_as_gif(slices_series, output_dir)
-
                 Sdef_series, v_series, u_series, Sdef_mask_series, ui_series = model(slices_series, resmode = "TLRN", masks=masks_series)
                 if i_batch %50 == 0:
                     phi = torch.stack(ui_series, dim=1).permute(0,4,1,2,3)

@@ -56,12 +56,7 @@ class SpatialTransformer(nn.Module):
             new_locs_unnormalize = new_locs_unnormalize.permute(0, 2, 3, 4, 1)
             new_locs_unnormalize = new_locs_unnormalize[..., [2, 1, 0]]
 
-        warped = F.grid_sample(src, new_locs, mode=mode)
-        # print(new_locs.shape)   #[b, 64, 64, 64, 3]
-        # print(warped.shape)     #[6, 3, 64, 64, 64]
-        # return nnf.grid_sample(src, new_locs, align_corners=True, mode=self.mode)
-
-       
+        warped = F.grid_sample(src, new_locs, mode=mode)       
         return (warped, new_locs_unnormalize)
 
 class VecInt(nn.Module):
@@ -77,7 +72,7 @@ class VecInt(nn.Module):
         self.scale = 1.0 / (2 ** self.nsteps)
         self.transformer = SpatialTransformer(inshape)
         self.registration = registration
-    def forward(self, vec):  ###速度场->形变场
+    def forward(self, vec):
         dispList = []
 
         vec = vec * self.scale
@@ -87,7 +82,6 @@ class VecInt(nn.Module):
             scratch,_ = self.transformer(vec, vec)
             vec = vec + scratch
             dispList.append(vec)
-        # print("vec ", vec.requires_grad)
         if not self.registration:
             return vec
         else:
@@ -104,9 +98,6 @@ class Svf(nn.Module):
         #self.scale = 3
         self.transformer = SpatialTransformer(inshape)
     
-
-    # def integrate(self, pos_flow):
-    # def Svf_shooting(self, pos_flow):  #pos_flow: [b, 2, 64, 64]  (b,64,64,2)
     def forward(self, pos_flow):  #pos_flow: [b, 2, 64, 64]  (b,64,64,2)
         dims = len(pos_flow.shape)-2
         if dims == 2:
@@ -129,10 +120,7 @@ class Svf(nn.Module):
             scratch,_ = self.transformer(vec, vec)
             vec = vec + scratch
             dispList.append(vec)
-
-            # print(vec.shape)     #[70, 2, 64, 64]
-            # assert 4>8888
-        
+            
         return vec, dispList   #len
 
 class Grad:
@@ -162,7 +150,6 @@ class Grad:
                 grad *= self.loss_mult
             return grad
         elif(len(y_pred.shape) == 4):
-            # print("y_pred   ",y_pred.shape)
             dy = torch.abs(y_pred[:, :, 1:, :] - y_pred[:, :, :-1, :])
             dx = torch.abs(y_pred[:, :, :, 1:] - y_pred[:, :, :, :-1])
           
@@ -207,9 +194,9 @@ def Mgridplot(u, Hpath, Nx=64, Ny=64, displacement=True, color='red', dpi=128, s
    
     # plt.figure(dpi= 128)
     plt.figure(figsize=(1,1))
-    plt.xticks([])  # 去掉x轴
-    plt.yticks([])  # 去掉y轴
-    plt.axis('off')  # 去掉坐标轴
+    plt.xticks([])  
+    plt.yticks([])  
+    plt.axis('off')  
     plt.subplots_adjust(top=1,bottom=0,left=0,right=1,hspace=0,wspace=0)
     plt.margins(0,0)
     
@@ -245,9 +232,7 @@ def Mgridplot(u, Hpath, Nx=64, Ny=64, displacement=True, color='red', dpi=128, s
         plt.plot(h[0,:,i], h[1,:,i],  color=color, linewidth=linewidth, **kwargs)
     plt.axis('equal')
     plt.gca().invert_yaxis()
-    # plt.savefig(Hpath,dpi= dpi*20)
     plt.savefig(Hpath,dpi= dpi*scale,transparent=True)
-    # plt.savefig(Hpath, dpi= dpi*20, transparent=True, bbox_inches='tight', pad_inches=0.0)
     plt.cla()
     plt.clf()
     plt.close()
@@ -338,26 +323,14 @@ def Hausdorff_distance(tensor_a, tensor_b):
     xyz_a = np.array([position_a[0], position_a[1]]).T
     xyz_b = np.array([position_b[0], position_b[1]]).T
 
-    # print(xyz_a.shape, xyz_b.shape) (55777, 3) (57202, 3)
-
-    # distances1to2 = torch.cdist(torch.tensor(xyz_a, dtype=torch.float32), torch.tensor(xyz_b, dtype=torch.float32)).min(dim=1).values
-    # distances2to1 = torch.cdist(torch.tensor(xyz_b, dtype=torch.float32), torch.tensor(xyz_a, dtype=torch.float32)).min(dim=1).values
-
     distances1to2 = torch.cdist(torch.tensor(xyz_a, dtype=torch.float32).cuda(), torch.tensor(xyz_b, dtype=torch.float32).cuda())
     distances2to1 = torch.cdist(torch.tensor(xyz_b, dtype=torch.float32).cuda(), torch.tensor(xyz_a, dtype=torch.float32).cuda())
-
-    # print(distances1to2.shape, distances2to1.shape)   torch.Size([55777, 57202]) torch.Size([57202, 55777])
 
     distances1to2 = torch.min(distances1to2, dim=1).values
     distances2to1 = torch.min(distances2to1, dim=1).values
 
-    # print(distances1to2.shape, distances2to1.shape)   torch.Size([55777]) torch.Size([57202])
-
-
     hausdorff_distance = torch.max(torch.max(distances1to2), torch.max(distances2to1))
 
-    # print(hausdorff_distance)   tensor(5.3852)
-    #delete data
     del edge_a, edge_b, position_a, position_b, xyz_a, xyz_b, distances1to2, distances2to1, tensor_a, tensor_b
     return hausdorff_distance.item()
 
@@ -385,10 +358,6 @@ def dice_coefficient(tensor_a, tensor_b, return_mean=True):
     else:
         assert 4>9, "ndim is not 4 or 5 or 3 or 2"
     
-    # print(intersection)
-    # print(union)
-    # if union == 0:
-    #     return 1.0  # Handle the case where both tensors are empty.
     union[union==0] = 0.0000000001
     res = (2.0 * intersection) / union
 

@@ -131,7 +131,6 @@ def get_latest_checkpoint(snapshot_dir):
 # Find latest checkpoint
 latest_checkpoint, start_step = get_latest_checkpoint(SNAPSHOT_DIR)
 RESTORE_FROM = latest_checkpoint
-#RESTORE_FROM = 'videoflowdiff_natops/snapshots-j-of-lnc-upconv/flowdiff_0013_S349700.pth'
 set_start = start_step
 print("RESTORE_FROM", RESTORE_FROM)
 

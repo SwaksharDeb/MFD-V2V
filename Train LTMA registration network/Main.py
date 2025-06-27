@@ -80,8 +80,6 @@ if __name__ == "__main__":
     cudnn.benchmark = True
     cudnn.deterministic = False
     torch.use_deterministic_algorithms(False)
-    # torch.autograd.set_detect_anomaly(True)
-
 
     dataset_name = args.dataset
     module_name = args.module_name
@@ -95,12 +93,6 @@ if __name__ == "__main__":
         "cine_slice_img": HOME+ '/datasets/revserse_cine64_12slice.mat' ,
         "reversed_cine_slice_mask": HOME+ '/datasets/revserse_cine64_12slice_mask.mat' ,
     }
-    # dataset_config = {
-    #     "lemniscate": HOME+ '/datasets/lemniscate_example_series.mat' ,
-    #     "cine_slice_img": HOME+ '/datasets/all_masks.mat' ,
-    #     "reversed_cine_slice_mask": HOME+ '/datasets/all_masks.mat' ,
-    # }
-
     
     if "cine_slice_img_reversed" in dataset_name:
         args.train_dense = dataset_config['cine_slice_img']

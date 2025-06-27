@@ -235,7 +235,6 @@ class FlowDiffusion(nn.Module):
             flow_fields = []
             deformed_frames = []
             velocity_list = []
-            #Sdef_series, v_series, u_series, Sdef_mask_series, ui_series = self.net(self.real_mask.squeeze(1), resmode = "TLRN", masks=self.real_mask.squeeze(1))
             Sdef_series, v_series, u_series, Sdef_mask_series, ui_series = self.net(self.real_vid.squeeze(1), resmode = "TLRN", masks=self.real_mask.squeeze(1))
             b_ = ui_series[1].shape[0]
             zero_tensor = torch.zeros(b, 64, 64, 2).cuda()

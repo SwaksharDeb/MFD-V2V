@@ -419,7 +419,6 @@ def main():
     
     cnt = 0
     actual_step = args.start_step
-    #start_epoch = int(math.ceil((args.start_step * args.batch_size)/NUM_EXAMPLES_PER_EPOCH))
     start_epoch = actual_step
     epoch_cnt = start_epoch
     

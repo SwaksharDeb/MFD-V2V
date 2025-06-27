@@ -140,17 +140,13 @@ def get_arguments():
     Returns:
       A list of parsed arguments.
     """
-
-    # args = get_arguments()
     parser = argparse.ArgumentParser(description="Flow Diffusion")
     parser.add_argument("--fine-tune", default=False)
     parser.add_argument("--set-start", default=True)  #default=False
-    parser.add_argument("--start-step", default=set_start, type=int)  #0
+    parser.add_argument("--start-step", default=set_start, type=int) 
     parser.add_argument("--img-dir", type=str, default=IMGSHOT_DIR,
                         help="Where to save images of the model.")
-    parser.add_argument("--num-workers", default=4)   #8,4
-    # parser.add_argument("--final-step", type=int, default=int(NUM_STEPS_PER_EPOCH * MAX_EPOCH),
-    #                     help="Number of training steps.")
+    parser.add_argument("--num-workers", default=4)  
     parser.add_argument("--final-step", type=int, default=3360000000,
                         help="Number of training steps.")
     parser.add_argument("--gpu", default=GPU,

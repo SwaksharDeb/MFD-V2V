@@ -325,7 +325,6 @@ def Hausdorff_distance(tensor_a, tensor_b):
     return hausdorff_distance.item()
 
 def dice_coefficient(tensor_a, tensor_b, return_mean=True):
-    # print("dice_tensor_shape:  ",tensor_a.shape, tensor_b.shape)    #[10, 1, 128, 128] [10, 1, 128, 128]
     tensor_a = tensor_a.clone()
     tensor_b = tensor_b.clone()
 

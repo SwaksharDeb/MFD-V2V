@@ -90,7 +90,6 @@ class VecInt(nn.Module):
 class Svf(nn.Module):
     def __init__(self, inshape, steps=7):
         super().__init__()
-        #self.nsteps = steps
         self.nsteps = 7
         assert self.nsteps >= 0, 'nsteps should be >= 0, found: %d' % self.nsteps
         self.scale = 1.0 / (2 ** self.nsteps)
@@ -112,8 +111,6 @@ class Svf(nn.Module):
         
         vec = vec * self.scale
         dispList.append(vec)
-
-
         for _ in range(self.nsteps):
             scratch,_ = self.transformer(vec, vec)
             vec = vec + scratch

@@ -25,59 +25,18 @@ from datasets_natops import NATOPS, NATOPS_test
 import sys
 import random
 from skimage.metrics import structural_similarity as ssim
-#from DM.modules.video_flow_diffusion_model import FlowDiffusion
 from modules.video_flow_diffusion_model import FlowDiffusion
 from torch.optim.lr_scheduler import MultiStepLR
 import gc 
 from torch.cuda.amp import autocast
 import shutil
 
-##Default distributed training parameters
-# DEFAULT_MASTER_ADDR = "127.0.0.1"
-# DEFAULT_MASTER_PORT = "29500"
-# DEFAULT_NPROC_PER_NODE = 3
-# DEFAULT_NNODES = 1
-# DEFAULT_NODE_RANK = 0
-
-# # Set environment variables for distributed training
-# os.environ["MASTER_ADDR"] = DEFAULT_MASTER_ADDR
-# os.environ["MASTER_PORT"] = DEFAULT_MASTER_PORT
-# os.environ["WORLD_SIZE"] = str(DEFAULT_NPROC_PER_NODE * DEFAULT_NNODES)
-# os.environ["LOCAL_RANK"] = os.environ.get("LOCAL_RANK", "0")
-# os.environ["RANK"] = os.environ.get("RANK", "0")
-
-# def delete_folders(base_path, del_indices):
-#     # Handle single digits with leading zero
-#     folders_to_delete = []
-#     for idx in del_indices:
-#         if idx < 10:
-#             folders_to_delete.append(f'A01_P0{idx}')
-#         else:
-#             folders_to_delete.append(f'A01_P{idx}')
-    
-#     for folder in folders_to_delete:
-#         folder_path = os.path.join(base_path, folder)
-#         if os.path.exists(folder_path):
-#             try:
-#                 shutil.rmtree(folder_path)
-#                 print(f"Successfully deleted {folder}")
-#             except Exception as e:
-#                 print(f"Error deleting {folder}: {e}")
-#         else:
-#             print(f"Folder {folder} does not exist")
-
-# base_path = "contrast_normalized_ventricles"
-# del_indx = [2,3,4,10,23,26,29,32,53,58,59,65,69,80,138,139,146,147,148,154,155,162,168,169,177,184,185,192,193,200,201,202,203,214,215,218,235,237,238,247,249,250,253,258,259,262,265,268,269,270,274,276,284,292,293,297,298,299,300,301,309,310,317,318,319,326,327,335,336,337,343,344,345,346,356,356,357,366,367,368,376] 
-# delete_folders(base_path, del_indx)
-
 torch.cuda.empty_cache()
 start = timeit.default_timer()
 BATCH_SIZE = 13
 MAX_EPOCH = 140
 epoch_milestones = [80, 100]
-#root_dir = '/data/hfn5052/text2motion/videoflowdiff_natops'
 root_dir = 'videoflowdiff_natops'
-#data_dir = "/data/hfn5052/text2motion/dataset/NATOPS/split_img_data"
 data_dir = 'contrast_normalized_ventricles' #"cropped_ventricles"
 mask_dir = "cropped_masks"
 mask_dir_dense = 'cropped_masks_dense'
@@ -86,12 +45,6 @@ dense_dir = 'cropped_dense'
 GPU = "0,1,2,3"
 postfix = "-j-of-lnc-upconv"
 joint = "joint" in postfix or "-j" in postfix  # allow joint training with unconditional model
-# if "random" in postfix:
-#     frame_sampling = "random"
-# elif "-vr" in postfix:
-#     frame_sampling = "very_random"
-# else:
-#     frame_sampling = "uniform"
 
 frame_sampling = "very_random"
 only_use_flow = "onlyflow" in postfix or "-of" in postfix  # whether only use flow loss
@@ -365,12 +318,8 @@ def save_sampled_images(images, sequence_name, base_dir='sampled_images'):
         # Ensure pixel values are in [0, 255] range
         if img.max() <= 1.0:
             img = (img * 255).astype(np.uint8)
-            #mask = img > 215
-            #img[mask] = 0
         else:
             img = img.astype(np.uint8)
-            #mask = img > 215
-            #img[mask] = 0
             
         # Create image file name
         img_name = f'image_{i:04d}.png'

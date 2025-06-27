@@ -187,8 +187,6 @@ class Net2DResNet(nn.Module):
         
         self.residue_block_num = (self.args.series_len-2) if not self.args.one_residue_block else 1
 
-        # nb_features=[[16, 32, 32, 32], [32, 32, 32, 32, 32, 16, 16]]
-        # nb_features=[[16, 32], [32, 32, 32, 16, 16]]
         nb_features=args.nb_features
         infeats=2
         nb_levels=None
@@ -332,7 +330,6 @@ class Net2DResNet(nn.Module):
                 x = conv(x)
             if not self.half_res or level < (self.nb_levels - 2):
                 x = self.upsampling[level](x)
-                # print("x.shape: ", x.shape, "  x_history[skip_index].shape: ", x_history[skip_index].shape)
                 x = torch.cat([x, x_history[skip_index]], dim=1)
                 skip_index -= 1
         for conv in self.remaining:
@@ -388,51 +385,14 @@ class Net2DResNet(nn.Module):
 
             low_dim_features_seq.append(low_dim_features)   #length: 8
             x_history_seq.append(x_his)
-
-
-        # print("######  low_dim_features_seq: ", len(low_dim_features_seq),"   " ,seq_num)  #11 12
-
-        # Apply temporal attention instead of residual blocks (Multihead Self Attention)
-        low_dim_features_merge_seq = self.temporal_attention(low_dim_features_seq)
-        
-        ## Resnet : correct low_dim_features
-        # low_dim_features_merge_seq = []
-        # low_dim_features1 = low_dim_features_seq[0]
-        # low_dim_features_merge_seq.append(low_dim_features1*1.0)
-        # for cnt in range(1, len(low_dim_features_seq)):
-        #     low_dim_features2 = low_dim_features_seq[cnt]
-        #     # inputX = (low_dim_features1 + low_dim_features2) / 2
-        #     inputX = torch.cat((low_dim_features1, low_dim_features2), dim=1)
-
-        #     if self.args.one_residue_block:
-        #         for level, conv in enumerate(self.residue_block[0]):
-        #             inputX = conv(inputX)
-                
-        #     else:
-        #         for level, conv in enumerate(self.residue_block[cnt-1]):
-        #             inputX = conv(inputX)
-
-
-        #     low_dim_features_merge_seq.append(inputX)
-        #     low_dim_features1 = inputX
-    
-
-
-
        
         ## Decoder Block
-        # print("$$$$$$$$", len(low_dim_features_merge_seq), len(x_history_seq))  #11 11
-        # assert 4>888
         for cnt in range(0, seq_num-1):  #seq_num-1
-            
             full_dim_features = self.exec_decoder(low_dim_features_merge_seq[cnt], x_history_seq[cnt])   #[4, 64, 64, 2]
-            # full_dim_features = self.blurred_sum(full_dim_features)
             full_dim_features = full_dim_features.permute(0,3,1,2) #[4, 2, 64, 64]
 
             if "SM" in self.args.dataset:
                 full_dim_features = self.blurred_sum(full_dim_features)
-
-
 
             v_series.append(full_dim_features)
 
@@ -447,7 +407,6 @@ class Net2DResNet(nn.Module):
                 Sdef_mask_series.append(Sdef_mask)
 
             Sdef_series.append(Sdef)
-            # u_series.append(u)
             u_series.append(phiinv)
             ui_series.append(phi)
 

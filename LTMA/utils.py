@@ -36,7 +36,6 @@ class SpatialTransformer(nn.Module):
         new_locs = self.grid + flow   #self.grid:  identity
         new_locs_unnormalize = self.grid + flow
         shape = flow.shape[2:]
-        #  new_locs  :  torch.Size([1, 3, 64, 64, 64])
         # need to normalize grid values to [-1, 1] for resampler
         for i in range(len(shape)):
             new_locs[:, i, ...] = 2 * (new_locs[:, i, ...] / (shape[i] - 1) - 0.5)
@@ -95,7 +94,6 @@ class Svf(nn.Module):
         self.nsteps = 7
         assert self.nsteps >= 0, 'nsteps should be >= 0, found: %d' % self.nsteps
         self.scale = 1.0 / (2 ** self.nsteps)
-        #self.scale = 3
         self.transformer = SpatialTransformer(inshape)
     
     def forward(self, pos_flow):  #pos_flow: [b, 2, 64, 64]  (b,64,64,2)
@@ -162,11 +160,6 @@ class Grad:
             if self.loss_mult is not None:
                 grad *= self.loss_mult
             return grad
-
-
-
-
-
 
 def to_numpy(arr):
     if isinstance(arr, np.ndarray):

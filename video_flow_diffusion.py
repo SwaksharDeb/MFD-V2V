@@ -247,7 +247,6 @@ class SpatialLinearAttention(nn.Module):
         self.scale = dim_head ** -0.5
         self.heads = heads
         hidden_dim = dim_head * heads
-        # self.to_qkv = nn.Conv2d(dim, hidden_dim * 3, 1, bias=False)
         self.to_q = nn.Conv2d(dim, hidden_dim, 1, bias=False)
         self.to_kv = nn.Conv2d(dim, hidden_dim * 2, 1, bias=False)
         self.to_out = nn.Conv2d(hidden_dim, dim, 1)
@@ -260,7 +259,6 @@ class SpatialLinearAttention(nn.Module):
         q = self.to_q(x[0])
         kv = self.to_kv(x[1]).chunk(2, dim=1)
         qkv = (q, kv[0], kv[1])
-        #qkv = self.to_qkv(x).chunk(3, dim=1)
         q, k, v = rearrange_many(qkv, 'b (h c) x y -> b h c (x y)', h=self.heads)
 
         q = q.softmax(dim=-2)
@@ -289,7 +287,6 @@ class EinopsToAndFrom(nn.Module):
         reconstitute_kwargs = dict(tuple(zip(self.from_einops.split(' '), shape)))
         x[0] = rearrange(x[0], f'{self.from_einops} -> {self.to_einops}')
         x[1] = rearrange(x[1], f'{self.from_einops} -> {self.to_einops}')
-        #x[1] = rearrange(x[2], f'{self.from_einops} -> {self.to_einops}')
         x = self.fn(x, **kwargs)
         x = rearrange(x, f'{self.to_einops} -> {self.from_einops}', **reconstitute_kwargs)
         return x
@@ -321,9 +318,6 @@ class Attention(nn.Module):
             focus_present_mask=None
     ):
         n, device = x[0].shape[-2], x[0].device
-        #x[0] = x[0].permute(0, 2, 3, 4, 1)
-        #x[1] = x[1].permute(0, 2, 3, 4, 1)
-        #qkv = self.to_qkv(x).chunk(3, dim=-1)
         q = self.to_q(x[0])
         kv = self.to_kv(x[1]).chunk(2, dim=-1)
         qkv= (q, kv[0], kv[1])
@@ -361,7 +355,6 @@ class Attention(nn.Module):
         attn = sim.softmax(dim=-1)
 
         # aggregate values
-
         out = einsum('... h i j, ... h j d -> ... h i d', attn, v)
         out = rearrange(out, '... h n d -> ... n (h d)')
         return self.to_out(out)

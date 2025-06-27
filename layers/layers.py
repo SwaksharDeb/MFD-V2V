@@ -58,8 +58,6 @@ class VecInt(nn.Module):
 
         assert nsteps >= 0, 'nsteps should be >= 0, found: %d' % nsteps
         self.nsteps = nsteps
-        #self.scale = 1.0 / (2 ** self.nsteps)
-        #self.scale = 1.0
         self.scale = 1.0 / (self.nsteps)
         self.transformer = SpatialTransformer(inshape)
 

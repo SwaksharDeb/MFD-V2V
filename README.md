@@ -40,8 +40,8 @@ Run this below command if you want to train our registration network
                                         `python Train LTMA registration Network/Main.py`
 
 ### Train the Diffusion Model
-If you want to train the diffusion model Run the below command
+Currently, the code is implemented to use **4 GPUs**. Each GPU requires **48GB** of memory at least. If you want to train the diffusion model, then run the below command
 
-                                        torchrun --nproc_per_node=4 --nnodes=1 --node_rank=0 --master_addr="127.0.0.1" --master_port=29500 DM/train_video_flow_diffusion_natops.py 
+                                torchrun --nproc_per_node=4 --nnodes=1 --node_rank=0 --master_addr="127.0.0.1" --master_port=29500 train_video_flow_diffusion_natops.py 
 
-We already provide the pretrain weight of our registration network (LTMA) as a .pth file inside the models folder.
+We already provide the pretrain weight of our registration network (LTMA) as a .pth file inside the **models** folder.

@@ -32,6 +32,31 @@ This paper presents a novel motion feature guided diffusion model for unpaired v
 In the above demos, for each coloum, **(left)** is the DENSE CMR sequences and **(right)** is the paired Cine CMR sequences synthesized by our method MFD-V2V. 
 
 ## How to Train MFD-V2V
+
+### Folder Structure
+This project expects the input data to be organized in the following directory structure under the root directory:
+
+├── contrast_normalized_ventricles/
+│ ├── A01_P00/
+│ │ ├── image_00001.png
+│ │ ├── image_00002.png
+│ │ ├── ...
+│ │ └── image_00020.png
+│ ├── A01_P01/
+│ │ ├── image_00001.png
+│ │ ├── image_00002.png
+│ │ ├── ...
+│ │ └── image_00020.png
+│ ├── A01_P05/
+│ ├── A01_P06/
+│ ├── A01_P07/
+│ └── A01_P08/
+
+- Each subfolder inside `contrast_normalized_ventricles/` corresponds to a different subject or timepoint (e.g., `A01_P00`, `A01_P01`, etc.).
+- Inside each subfolder, images are stored as sequential `.png` files: `image_00001.png`, `image_00002.png`, ..., `image_00020.png`.
+- All image slices for a particular scan must be present and follow the exact naming convention to ensure compatibility with the codebase.
+
+
 ### Train the Registration Network
 If you want to train the registration network, then go to the "Train LTMA registration Network" and run the Main.py file. The code will automatically save the last checkpoint for you, so you don't need to do anything. After training the registration network put the checkpoint in the models folder. We already provide the pretrain weights of the registration network inside the models folder.
 

@@ -38,13 +38,7 @@ class NATOPS(data.Dataset):
         #mask_name_list.sort()
         mask_name_list.sort(key=lambda x: int(re.search(r'P(\d+)', x).group(1)))
 
-        #train_ID = [3, 4, 8, 9, 12, 13, 15, 17, 19, 20]
-        #self.test_ID = [1, 3, 5, 7, 11]    #9
-        #self.test_ID = [i for i in range(0,105)]
-        #ID_removed =  [i for i in range(80,105)]
-        #train_ID = [i for i in range(0,105)]   # 80,104
         train_ID = [i for i in range(377)]
-        #train_ID = [x for x in train_ID if x not in ID_removed]
         train_video_name_list = []
         for video_name in video_name_list:
             sub_name = int(video_name[5:])

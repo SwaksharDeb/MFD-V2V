@@ -66,6 +66,9 @@ Run this below command if you want to train our registration network
 
                                         `python Train LTMA registration Network/Main.py`
 
+### Download the Pretrain Diffusion weights
+Download the pretrain diffusion model weights from [this box directory](https://virginia.box.com/s/gk59e7ea0ni306xvcx527aa69dzdc1zd). Unzip it and place the *videoflowdiff_natops* folder in this code base. 
+
 ### Train the Diffusion Model
 Currently, the code is implemented to use **4 GPUs**. Each GPU requires **48GB** of memory at least. If you want to train the diffusion model, then run the below command
 

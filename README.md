@@ -42,6 +42,6 @@ Run this below command if you want to train our registration network
 ### Train the Diffusion Model
 If you want to train the diffusion model Run the below command
 
-                                        `python train_video_flow_diffusion.py` 
+                                        torchrun --nproc_per_node=4 --nnodes=1 --node_rank=0 --master_addr="127.0.0.1" --master_port=29500 DM/train_video_flow_diffusion_natops.py 
 
 We already provide the pretrain weight of our registration network (LTMA) as a .pth file inside the models folder.

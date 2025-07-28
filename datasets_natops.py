@@ -27,30 +27,7 @@ class NATOPS(data.Dataset):
             self.y_min, self.y_max, self.x_min, self.x_max = 10, 239, 30, 290
             print("use crop box:", self.y_min, self.y_max, self.x_min, self.x_max)
 
-        self.action_list = ["cine image",
-                            "All Clear",
-                            "Not Clear",
-                            "Spread Wings",
-                            "Fold Wings",
-                            "Lock Wings",
-                            "Up Hook",
-                            "Down Hook",
-                            "Remove Tiedowns",
-                            "Remove Chocks",
-                            "Insert Chocks",
-                            "Move Ahead",
-                            "Turn Left",
-                            "Turn Right",
-                            "Next Marshaller",
-                            "Slow Down",
-                            "Stop",
-                            "Nosegear Steering",
-                            "Hot Brakes",
-                            "Brakes On",
-                            "Brakes Off",
-                            "Install Tiedowns",
-                            "Fire",
-                            "Cut Engine"]
+        self.action_list = ["cine image"]
         self.num_frames = num_frames
         self.image_size = image_size
         video_name_list = os.listdir(data_dir)

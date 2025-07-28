@@ -37,11 +37,11 @@ If you want to train the registration network, then go to the "Train LTMA regist
 
 Run this below command if you want to train our registration network
 
-`python Train LTMA registration Network/Main.py`
+                                        `python Train LTMA registration Network/Main.py`
 
 ### Train the Diffusion Model
 If you want to train the diffusion model Run the below command
 
-`python train_video_flow_diffusion.py file` 
+                                        `python train_video_flow_diffusion.py` 
 
 We already provide the pretrain weight of our registration network (LTMA) as a .pth file inside the models folder.

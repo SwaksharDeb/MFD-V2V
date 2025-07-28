@@ -36,7 +36,7 @@ In the above demos, for each coloum, **(left)** is the DENSE CMR sequences and *
 ### Folder Structure
 This project expects the input data to be organized in the following directory structure under the root directory:
 
-<pre><code> ```├── contrast_normalized_ventricles/ │ ├── A01_P00/ │ │ ├── image_00001.png │ │ ├── image_00002.png │ │ ├── ... │ │ └── image_00020.png │ ├── A01_P01/ │ │ ├── image_00001.png │ │ ├── image_00002.png │ │ ├── ... │ │ └── image_00020.png │ ├── A01_P05/ │ ├── A01_P06/ │ ├── A01_P07/ │ └── A01_P08/ ``` </code></pre>
+<pre><code> ``` ├── contrast_normalized_ventricles/ │ ├── A01_P00/ │ │ ├── image_00001.png │ │ ├── image_00002.png │ │ ├── ... │ │ └── image_00020.png │ ├── A01_P01/ │ │ ├── image_00001.png │ │ ├── image_00002.png │ │ ├── ... │ │ └── image_00020.png │ ├── A01_P05/ │ ├── A01_P06/ │ ├── A01_P07/ │ └── A01_P08/ ``` </code></pre>
 
 - Each subfolder inside `contrast_normalized_ventricles/` corresponds to a different subject or timepoint (e.g., `A01_P00`, `A01_P01`, etc.).
 - Inside each subfolder, images are stored as sequential `.png` files: `image_00001.png`, `image_00002.png`, ..., `image_00020.png`.
